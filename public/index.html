@@ -1,0 +1,1692 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeTempo — Net Worth Timeline</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.2.0/dist/tabler-icons.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap");
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #0a0e1a;
+        --surface: #111827;
+        --surface2: #1a2235;
+        --border: #1e2d45;
+        --green: #00d4a0;
+        --red: #ff5470;
+        --blue: #3d8ef8;
+        --amber: #f5a623;
+        --purple: #9b6dff;
+        --teal: #20c4c8;
+        --text: #e8edf5;
+        --muted: #6b7fa0;
+        --font: "DM Sans", sans-serif;
+        --mono: "DM Mono", monospace;
+        --display: "DM Serif Display", serif;
+      }
+      html,
+      body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Layout */
+      #app {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .shell {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        height: 100vh;
+        width: 100%;
+      }
+      /* Sidebar */
+      .sidebar {
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+      }
+      .logo {
+        padding: 24px 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .logo-text {
+        font-family: var(--display);
+        font-size: 22px;
+      }
+      .logo-text em {
+        font-style: normal;
+        color: var(--green);
+      }
+      .logo-sub {
+        font-size: 9px;
+        font-family: var(--mono);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .nav-section {
+        font-size: 9px;
+        font-family: var(--mono);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding: 14px 20px 4px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-size: 14px;
+        color: var(--muted);
+        border-left: 2px solid transparent;
+        transition: 0.15s;
+      }
+      .nav-item:hover {
+        color: var(--text);
+        background: var(--surface2);
+      }
+      .nav-item.active {
+        color: var(--green);
+        border-left-color: var(--green);
+        background: rgba(0, 212, 160, 0.06);
+      }
+      .sidebar-footer {
+        margin-top: auto;
+        padding: 16px 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--green), var(--blue));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 500;
+        color: #000;
+        flex-shrink: 0;
+      }
+      /* Main */
+      .main {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .topbar {
+        height: 60px;
+        padding: 0 28px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface);
+        flex-shrink: 0;
+      }
+      .topbar-title {
+        font-family: var(--display);
+        font-size: 18px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+      .page {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      /* Cards */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px 22px;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      /* Stats */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+      .stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 18px;
+        position: relative;
+        overflow: hidden;
+      }
+      .stat::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+      }
+      .stat.green::before {
+        background: var(--green);
+      }
+      .stat.blue::before {
+        background: var(--blue);
+      }
+      .stat.red::before {
+        background: var(--red);
+      }
+      .stat.purple::before {
+        background: var(--purple);
+      }
+      .stat-label {
+        font-size: 10px;
+        font-family: var(--mono);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .stat-value {
+        font-size: 22px;
+        font-weight: 300;
+        font-family: var(--display);
+        letter-spacing: -0.5px;
+      }
+      .stat-sub {
+        font-size: 12px;
+        font-family: var(--mono);
+        color: var(--muted);
+        margin-top: 5px;
+      }
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: var(--font);
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        color: var(--text);
+        cursor: pointer;
+        transition: 0.15s;
+      }
+      .btn:hover {
+        border-color: var(--green);
+        color: var(--green);
+      }
+      .btn-primary {
+        background: var(--green);
+        border-color: var(--green);
+        color: #000;
+        font-weight: 500;
+      }
+      .btn-primary:hover {
+        background: #00bfa0;
+        border-color: #00bfa0;
+        color: #000;
+      }
+      .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+      .btn-danger {
+        color: var(--red);
+        border-color: rgba(255, 84, 112, 0.3);
+      }
+      .btn-danger:hover {
+        background: rgba(255, 84, 112, 0.1);
+      }
+      /* Forms */
+      .form-group {
+        margin-bottom: 14px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        font-family: var(--mono);
+        color: var(--muted);
+        margin-bottom: 5px;
+        letter-spacing: 0.5px;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 9px 11px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-size: 14px;
+        font-family: var(--font);
+        outline: none;
+        transition: 0.15s;
+      }
+      input:focus,
+      select:focus {
+        border-color: var(--green);
+      }
+      select option {
+        background: var(--surface);
+      }
+      /* Auth */
+      .auth {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+      }
+      .auth-box {
+        width: 100%;
+        max-width: 400px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 36px 32px;
+      }
+      .auth-logo {
+        font-family: var(--display);
+        font-size: 28px;
+        text-align: center;
+        margin-bottom: 4px;
+      }
+      .auth-logo em {
+        font-style: normal;
+        color: var(--green);
+      }
+      .auth-sub {
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 28px;
+      }
+      .auth-err {
+        background: rgba(255, 84, 112, 0.1);
+        border: 1px solid rgba(255, 84, 112, 0.3);
+        border-radius: 6px;
+        padding: 10px 12px;
+        color: var(--red);
+        font-size: 13px;
+        margin-bottom: 14px;
+      }
+      .auth-link {
+        text-align: center;
+        margin-top: 18px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .auth-link a {
+        color: var(--green);
+        cursor: pointer;
+        text-decoration: none;
+      }
+      /* Modal */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+      }
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 28px;
+        width: 100%;
+        max-width: 420px;
+      }
+      .modal-title {
+        font-family: var(--display);
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+      /* Rows */
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 14px;
+        background: var(--surface2);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-bottom: 6px;
+      }
+      .row-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .icon-box {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+      }
+      .row-name {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .row-sub {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: var(--mono);
+      }
+      .row-val {
+        font-size: 14px;
+        font-weight: 500;
+        font-family: var(--mono);
+        text-align: right;
+      }
+      .row-pct {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      /* Type grid */
+      .type-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .type-btn {
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 11px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        transition: 0.15s;
+        font-family: var(--font);
+      }
+      .type-btn.active {
+        border-color: var(--green);
+        color: var(--green);
+        background: rgba(0, 212, 160, 0.08);
+      }
+      /* Empty */
+      .empty {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--muted);
+      }
+      .empty i {
+        font-size: 40px;
+        opacity: 0.3;
+        display: block;
+        margin-bottom: 12px;
+      }
+      /* Range tabs */
+      .range-tabs {
+        display: flex;
+        gap: 2px;
+        background: var(--surface2);
+        border-radius: 6px;
+        padding: 3px;
+      }
+      .range-tab {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: var(--mono);
+        cursor: pointer;
+        color: var(--muted);
+        border: none;
+        background: transparent;
+        transition: 0.15s;
+      }
+      .range-tab.active {
+        background: var(--green);
+        color: #000;
+        font-weight: 500;
+      }
+      /* Grid 2 col */
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 16px;
+      }
+      /* Tooltip */
+      .tt {
+        position: absolute;
+        display: none;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        pointer-events: none;
+        z-index: 10;
+        min-width: 180px;
+      }
+      .tt-date {
+        font-size: 10px;
+        font-family: var(--mono);
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+      .tt-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        font-size: 12px;
+        margin-bottom: 2px;
+      }
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      let state = {
+        user: null,
+        page: "dashboard",
+        assets: [],
+        liabilities: [],
+        snapshots: [],
+        range: "90d",
+        loading: false,
+      };
+      async function api(method, path, body) {
+        const res = await fetch("/api" + path, {
+          method,
+          credentials: "include",
+          headers: body ? { "Content-Type": "application/json" } : {},
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Request failed");
+        return data;
+      }
+      const GET = (path) => api("GET", path);
+      const POST = (path, body) => api("POST", path, body);
+      const PATCH = (path, body) => api("PATCH", path, body);
+      const DELETE = (path) => api("DELETE", path);
+      function fmt(n) {
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(n || 0);
+      }
+      function initials(user) {
+        if (user?.displayName)
+          return user.displayName
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+        return (user?.email?.[0] || "?").toUpperCase();
+      }
+      function el(tag, attrs = {}, ...children) {
+        const e = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs)) {
+          if (k === "class") e.className = v;
+          else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+          else e.setAttribute(k, v);
+        }
+        for (const c of children) {
+          if (c == null) continue;
+          e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+        }
+        return e;
+      }
+      function html(str) {
+        const d = document.createElement("div");
+        d.innerHTML = str;
+        return d.firstElementChild;
+      }
+      const TYPE_COLOR = {
+        bank: "#3d8ef8",
+        investment: "#9b6dff",
+        crypto: "#f5a623",
+        real_estate: "#20c4c8",
+        vehicle: "#00d4a0",
+        other: "#6b7fa0",
+      };
+      const TYPE_ICON = {
+        bank: "ti-building-bank",
+        investment: "ti-chart-candle",
+        crypto: "ti-currency-bitcoin",
+        real_estate: "ti-home",
+        vehicle: "ti-car",
+        other: "ti-circle-dot",
+      };
+      const LIAB_ICON = {
+        mortgage: "ti-home",
+        auto_loan: "ti-car",
+        student_loan: "ti-school",
+        credit_card: "ti-credit-card",
+        personal_loan: "ti-cash",
+        other: "ti-receipt",
+      };
+      async function loadData() {
+        const days = { "30d": 30, "90d": 90, "1y": 365 }[state.range] || 90;
+        const [a, l, s] = await Promise.all([
+          GET("/assets"),
+          GET("/liabilities"),
+          GET(`/snapshots?range=${state.range}`),
+        ]);
+        state.assets = a.assets;
+        state.liabilities = l.liabilities;
+        state.snapshots = s.snapshots;
+      }
+      function renderLogin() {
+        const errDiv = html('<div class="auth-err hidden"></div>');
+        const emailInput = html(
+          '<input type="email" placeholder="you@example.com" required />',
+        );
+        const passInput = html(
+          '<input type="password" placeholder="8+ characters" required />',
+        );
+        const btn = html(
+          '<button class="btn btn-primary" style="width:100%;justify-content:center">Sign in</button>',
+        );
+        const switchLink = html(
+          '<div class="auth-link">No account? <a id="go-register">Create one</a></div>',
+        );
+        btn.onclick = async () => {
+          errDiv.classList.add("hidden");
+          btn.textContent = "Signing in…";
+          try {
+            const data = await POST("/auth/login", {
+              email: emailInput.value,
+              password: passInput.value,
+            });
+            state.user = data.user;
+            await loadData();
+            render();
+          } catch (e) {
+            errDiv.textContent = e.message;
+            errDiv.classList.remove("hidden");
+            btn.textContent = "Sign in";
+          }
+        };
+        switchLink.querySelector("#go-register").onclick = () => {
+          state.page = "register";
+          render();
+        };
+        const box = el(
+          "div",
+          { class: "auth" },
+          el(
+            "div",
+            { class: "auth-box" },
+            html('<div class="auth-logo">Ne<em>Tempo</em></div>'),
+            html('<div class="auth-sub">Track your net worth over time</div>'),
+            errDiv,
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Email</label>"),
+              emailInput,
+            ),
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Password</label>"),
+              passInput,
+            ),
+            btn,
+            switchLink,
+          ),
+        );
+        return box;
+      }
+      function renderRegister() {
+        const errDiv = html('<div class="auth-err hidden"></div>');
+        const nameInput = html(
+          '<input type="text" placeholder="Jordan (optional)" />',
+        );
+        const emailInput = html(
+          '<input type="email" placeholder="you@example.com" required />',
+        );
+        const passInput = html(
+          '<input type="password" placeholder="8+ characters" required />',
+        );
+        const btn = html(
+          '<button class="btn btn-primary" style="width:100%;justify-content:center">Create account</button>',
+        );
+        const switchLink = html(
+          '<div class="auth-link">Already have an account? <a id="go-login">Sign in</a></div>',
+        );
+        btn.onclick = async () => {
+          errDiv.classList.add("hidden");
+          btn.textContent = "Creating…";
+          try {
+            const data = await POST("/auth/register", {
+              email: emailInput.value,
+              password: passInput.value,
+              displayName: nameInput.value,
+            });
+            state.user = data.user;
+            await loadData();
+            render();
+          } catch (e) {
+            errDiv.textContent = e.message;
+            errDiv.classList.remove("hidden");
+            btn.textContent = "Create account";
+          }
+        };
+        switchLink.querySelector("#go-login").onclick = () => {
+          state.page = "login";
+          render();
+        };
+        return el(
+          "div",
+          { class: "auth" },
+          el(
+            "div",
+            { class: "auth-box" },
+            html('<div class="auth-logo">Ne<em>Tempo</em></div>'),
+            html('<div class="auth-sub">Start your financial timeline</div>'),
+            errDiv,
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Display name</label>"),
+              nameInput,
+            ),
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Email</label>"),
+              emailInput,
+            ),
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Password</label>"),
+              passInput,
+            ),
+            btn,
+            switchLink,
+          ),
+        );
+      }
+      function renderShell(pageEl) {
+        const pages = ["dashboard", "timeline", "assets", "liabilities"];
+        const labels = {
+          dashboard: "Dashboard",
+          timeline: "Timeline",
+          assets: "Assets",
+          liabilities: "Liabilities",
+        };
+        const icons = {
+          dashboard: "ti-layout-dashboard",
+          timeline: "ti-chart-line",
+          assets: "ti-wallet",
+          liabilities: "ti-receipt",
+        };
+        const nav = pages.map((p) => {
+          const item = el(
+            "div",
+            { class: `nav-item${state.page === p ? " active" : ""}` },
+            html(`<i class="ti ${icons[p]}"></i>`),
+            p.charAt(0).toUpperCase() + p.slice(1),
+          );
+          item.onclick = async () => {
+            state.page = p;
+            await loadData();
+            render();
+          };
+          return item;
+        });
+        const logoutBtn = html(
+          '<span style="font-size:11px;font-family:var(--mono);color:var(--muted);cursor:pointer">sign out</span>',
+        );
+        logoutBtn.onclick = async () => {
+          await POST("/auth/logout");
+          state.user = null;
+          state.page = "login";
+          render();
+        };
+        return el(
+          "div",
+          { class: "shell" },
+          el(
+            "aside",
+            { class: "sidebar" },
+            el(
+              "div",
+              { class: "logo" },
+              html('<div class="logo-text">Ne<em>Tempo</em></div>'),
+              html('<div class="logo-sub">Net Worth Timeline</div>'),
+            ),
+            html('<div class="nav-section">Menu</div>'),
+            ...nav,
+            el(
+              "div",
+              { class: "sidebar-footer" },
+              el("div", { class: "avatar" }, initials(state.user)),
+              el(
+                "div",
+                {},
+                el(
+                  "div",
+                  { style: "font-size:13px;font-weight:500" },
+                  state.user?.displayName || state.user?.email || "",
+                ),
+                logoutBtn,
+              ),
+            ),
+          ),
+          el("div", { class: "main" }, pageEl),
+        );
+      }
+      function renderDashboard() {
+        const totalAssets = state.assets.reduce((s, a) => s + a.value, 0);
+        const totalLiab = state.liabilities.reduce((s, l) => s + l.balance, 0);
+        const netWorth = totalAssets - totalLiab;
+        const debtRatio =
+          totalAssets > 0
+            ? ((totalLiab / totalAssets) * 100).toFixed(1)
+            : "0.0";
+        const syncBtn = html(
+          '<button class="btn"><i class="ti ti-refresh"></i> Sync</button>',
+        );
+        syncBtn.onclick = async () => {
+          syncBtn.textContent = "Syncing…";
+          await POST("/snapshots/refresh");
+          await loadData();
+          render();
+        };
+        const stats = el(
+          "div",
+          { class: "stat-grid" },
+          statCard(
+            "green",
+            "Net worth",
+            fmt(netWorth),
+            `${state.snapshots.length} data points`,
+          ),
+          statCard(
+            "blue",
+            "Total assets",
+            fmt(totalAssets),
+            `${state.assets.length} accounts`,
+          ),
+          statCard(
+            "red",
+            "Total debt",
+            fmt(totalLiab),
+            `${state.liabilities.length} liabilities`,
+          ),
+          statCard(
+            "purple",
+            "Debt ratio",
+            debtRatio + "%",
+            debtRatio < 30 ? "▲ Healthy" : "▼ High",
+          ),
+        );
+        const chartWrap = el("div", { style: "position:relative" });
+        const svg = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "svg",
+        );
+        svg.style.width = "100%";
+        const ttEl = el("div", { class: "tt" });
+        chartWrap.appendChild(svg);
+        chartWrap.appendChild(ttEl);
+        const rangeTabs = el("div", { class: "range-tabs" });
+        for (const r of ["30d", "90d", "1y"]) {
+          const tab = el(
+            "button",
+            { class: `range-tab${state.range === r ? " active" : ""}` },
+            r,
+          );
+          tab.onclick = async () => {
+            state.range = r;
+            await loadData();
+            render();
+          };
+          rangeTabs.appendChild(tab);
+        }
+        const chartCard = el(
+          "div",
+          { class: "card" },
+          el(
+            "div",
+            { class: "card-header" },
+            html(
+              '<div class="card-title"><i class="ti ti-timeline" style="color:var(--green)"></i> Timeline</div>',
+            ),
+            rangeTabs,
+          ),
+          chartWrap,
+        );
+        const topAssets = [...state.assets]
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 5);
+        const assetRows = topAssets.length
+          ? topAssets.map((a) => assetRow(a, totalAssets))
+          : [
+              el(
+                "div",
+                { class: "empty" },
+                html('<i class="ti ti-wallet"></i>'),
+                "No assets yet",
+              ),
+            ];
+
+        const assetCard = el(
+          "div",
+          { class: "card" },
+          el(
+            "div",
+            { class: "card-header" },
+            html(
+              '<div class="card-title"><i class="ti ti-wallet" style="color:var(--green)"></i> Assets</div>',
+            ),
+            html(
+              `<span style="font-size:12px;font-family:var(--mono);color:var(--muted)">${fmt(totalAssets)}</span>`,
+            ),
+          ),
+          ...assetRows,
+        );
+        const page = el(
+          "div",
+          { class: "page" },
+          el(
+            "div",
+            { class: "topbar" },
+            html('<div class="topbar-title">Dashboard</div>'),
+            el("div", { class: "actions" }, syncBtn),
+          ),
+          el(
+            "div",
+            { style: "display:flex;flex-direction:column;gap:16px" },
+            stats,
+            chartCard,
+            assetCard,
+          ),
+        );
+        setTimeout(() => drawTimeline(svg, ttEl, state.snapshots), 0);
+        return page;
+      }
+      function statCard(color, label, value, sub) {
+        return el(
+          "div",
+          { class: `stat ${color}` },
+          el("div", { class: "stat-label" }, label),
+          el("div", { class: "stat-value" }, value),
+          el("div", { class: "stat-sub" }, sub),
+        );
+      }
+      function assetRow(a, totalAssets) {
+        const pct =
+          totalAssets > 0 ? Math.round((a.value / totalAssets) * 100) : 0;
+        const color = TYPE_COLOR[a.type] || "#6b7fa0";
+        return el(
+          "div",
+          { class: "row" },
+          el(
+            "div",
+            { class: "row-left" },
+            el(
+              "div",
+              { class: "icon-box", style: `background:${color}18` },
+              html(
+                `<i class="ti ${TYPE_ICON[a.type]}" style="color:${color}"></i>`,
+              ),
+            ),
+            el(
+              "div",
+              {},
+              el("div", { class: "row-name" }, a.name),
+              el(
+                "div",
+                { class: "row-sub" },
+                a.type.replace("_", " ") + " · " + a.source,
+              ),
+            ),
+          ),
+          el(
+            "div",
+            {},
+            el("div", { class: "row-val" }, fmt(a.value)),
+            el("div", { class: "row-pct" }, pct + "% of assets"),
+          ),
+        );
+      }
+      function drawTimeline(svgEl, ttEl, snapshots) {
+        const svg = d3.select(svgEl);
+        svg.selectAll("*").remove();
+        if (!snapshots.length) {
+          svgEl.style.height = "80px";
+          svg
+            .append("text")
+            .attr("x", "50%")
+            .attr("y", 50)
+            .attr("text-anchor", "middle")
+            .attr("fill", "#6b7fa0")
+            .attr("font-size", 13)
+            .attr("font-family", "DM Mono")
+            .text("No snapshot data yet — click Sync");
+          return;
+        }
+        const W = svgEl.parentElement.clientWidth || 600;
+        const H = 220;
+        svgEl.style.height = H + "px";
+        svg.attr("viewBox", `0 0 ${W} ${H}`).attr("width", W).attr("height", H);
+        const pad = { t: 16, r: 20, b: 28, l: 64 };
+        const iw = W - pad.l - pad.r,
+          ih = H - pad.t - pad.b;
+        const data = snapshots.map((s) => ({
+          date: new Date(s.date),
+          nw: s.netWorth,
+        }));
+        const xS = d3
+          .scaleTime()
+          .domain(d3.extent(data, (d) => d.date))
+          .range([0, iw]);
+        const [mn, mx] = d3.extent(data, (d) => d.nw);
+        const yS = d3
+          .scaleLinear()
+          .domain([mn * 0.94, mx * 1.06])
+          .range([ih, 0]);
+        const g = svg
+          .append("g")
+          .attr("transform", `translate(${pad.l},${pad.t})`);
+        yS.ticks(4).forEach((t) => {
+          g.append("line")
+            .attr("x1", 0)
+            .attr("x2", iw)
+            .attr("y1", yS(t))
+            .attr("y2", yS(t))
+            .attr("stroke", "rgba(255,255,255,0.05)");
+          g.append("text")
+            .attr("x", -10)
+            .attr("y", yS(t) + 4)
+            .attr("text-anchor", "end")
+            .attr("fill", "#6b7fa0")
+            .attr("font-size", 11)
+            .attr("font-family", "DM Mono")
+            .text("$" + Math.round(t / 1000) + "k");
+        });
+        xS.ticks(5).forEach((t) => {
+          g.append("text")
+            .attr("x", xS(t))
+            .attr("y", ih + 18)
+            .attr("text-anchor", "middle")
+            .attr("fill", "#6b7fa0")
+            .attr("font-size", 11)
+            .attr("font-family", "DM Mono")
+            .text(d3.timeFormat("%b %d")(t));
+        });
+        const defs = svg.append("defs");
+        const grad = defs
+          .append("linearGradient")
+          .attr("id", "nw-g")
+          .attr("x1", 0)
+          .attr("y1", 0)
+          .attr("x2", 0)
+          .attr("y2", 1);
+        grad
+          .append("stop")
+          .attr("offset", "0%")
+          .attr("stop-color", "#00d4a0")
+          .attr("stop-opacity", 0.18);
+        grad
+          .append("stop")
+          .attr("offset", "100%")
+          .attr("stop-color", "#00d4a0")
+          .attr("stop-opacity", 0);
+        const area = d3
+          .area()
+          .x((d) => xS(d.date))
+          .y0(ih)
+          .y1((d) => yS(d.nw))
+          .curve(d3.curveCatmullRom);
+        const line = d3
+          .line()
+          .x((d) => xS(d.date))
+          .y((d) => yS(d.nw))
+          .curve(d3.curveCatmullRom);
+        g.append("path").datum(data).attr("d", area).attr("fill", "url(#nw-g)");
+        g.append("path")
+          .datum(data)
+          .attr("d", line)
+          .attr("fill", "none")
+          .attr("stroke", "#00d4a0")
+          .attr("stroke-width", 2.5);
+        const vLine = g
+          .append("line")
+          .attr("y1", 0)
+          .attr("y2", ih)
+          .attr("stroke", "rgba(0,212,160,.25)")
+          .attr("stroke-width", 1)
+          .attr("display", "none");
+        const dot = g
+          .append("circle")
+          .attr("r", 4)
+          .attr("fill", "#00d4a0")
+          .attr("display", "none");
+        g.append("rect")
+          .attr("width", iw)
+          .attr("height", ih)
+          .attr("fill", "transparent")
+          .style("cursor", "crosshair")
+          .on("mousemove", function (event) {
+            const [mx] = d3.pointer(event);
+            const date = xS.invert(mx);
+            const idx = Math.max(
+              0,
+              Math.min(
+                d3.bisectLeft(
+                  data.map((d) => d.date.getTime()),
+                  date.getTime(),
+                ),
+                data.length - 1,
+              ),
+            );
+            const pt = data[idx];
+            if (!pt) return;
+            const x = xS(pt.date),
+              y = yS(pt.nw);
+            vLine.attr("x1", x).attr("x2", x).attr("display", null);
+            dot.attr("cx", x).attr("cy", y).attr("display", null);
+            ttEl.style.display = "block";
+            ttEl.style.left = x + pad.l + 12 + "px";
+            ttEl.style.top = y + pad.t - 10 + "px";
+            ttEl.innerHTML = `<div class="tt-date">${pt.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div><div class="tt-row"><span style="color:var(--muted)">Net worth</span><span style="color:var(--green);font-family:var(--mono)">${fmt(pt.nw)}</span></div>`;
+          })
+          .on("mouseleave", () => {
+            vLine.attr("display", "none");
+            dot.attr("display", "none");
+            ttEl.style.display = "none";
+          });
+      }
+      function renderTimeline() {
+        const totalAssets = state.assets.reduce((s, a) => s + a.value, 0);
+        const totalLiab = state.liabilities.reduce((s, l) => s + l.balance, 0);
+        const netWorth = totalAssets - totalLiab;
+        const svgEl = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "svg",
+        );
+        svgEl.style.width = "100%";
+        const ttEl = el("div", { class: "tt" });
+        const chartWrap = el(
+          "div",
+          { style: "position:relative" },
+          svgEl,
+          ttEl,
+        );
+        const rangeTabs = el("div", { class: "range-tabs" });
+        for (const r of ["30d", "90d", "1y"]) {
+          const tab = el(
+            "button",
+            { class: `range-tab${state.range === r ? " active" : ""}` },
+            r,
+          );
+          tab.onclick = async () => {
+            state.range = r;
+            await loadData();
+            render();
+          };
+          rangeTabs.appendChild(tab);
+        }
+        const page = el(
+          "div",
+          { class: "page" },
+          el(
+            "div",
+            { class: "topbar" },
+            html('<div class="topbar-title">Timeline</div>'),
+            rangeTabs,
+          ),
+          el(
+            "div",
+            { class: "stat-grid" },
+            statCard("green", "Net worth", fmt(netWorth), "current"),
+            statCard("blue", "Total assets", fmt(totalAssets), "current"),
+            statCard("red", "Total debt", fmt(totalLiab), "current"),
+            statCard(
+              "purple",
+              "Snapshots",
+              state.snapshots.length,
+              "daily data points",
+            ),
+          ),
+          el(
+            "div",
+            { class: "card" },
+            el(
+              "div",
+              { class: "card-header" },
+              html(
+                '<div class="card-title"><i class="ti ti-chart-line" style="color:var(--green)"></i> Net worth over time</div>',
+              ),
+            ),
+            chartWrap,
+          ),
+        );
+        setTimeout(() => drawTimeline(svgEl, ttEl, state.snapshots), 0);
+        return page;
+      }
+      function renderAssets() {
+        const totalAssets = state.assets.reduce((s, a) => s + a.value, 0);
+        const addBtn = html(
+          '<button class="btn btn-primary"><i class="ti ti-plus"></i> Add asset</button>',
+        );
+        addBtn.onclick = () => showAddAssetModal();
+        const rows = state.assets.length
+          ? state.assets.map((a) => {
+              const row = assetRow(a, totalAssets);
+              const del = html(
+                '<button class="btn btn-sm btn-danger"><i class="ti ti-trash"></i></button>',
+              );
+              del.onclick = async (e) => {
+                e.stopPropagation();
+                await DELETE(`/assets/${a._id}`);
+                await loadData();
+                render();
+              };
+              row.appendChild(del);
+              return row;
+            })
+          : [
+              el(
+                "div",
+                { class: "empty" },
+                html('<i class="ti ti-wallet"></i>'),
+                html("<p>No assets yet. Add one to get started.</p>"),
+              ),
+            ];
+        return el(
+          "div",
+          { class: "page" },
+          el(
+            "div",
+            { class: "topbar" },
+            html('<div class="topbar-title">Assets</div>'),
+            el("div", { class: "actions" }, addBtn),
+          ),
+          el(
+            "div",
+            { class: "card" },
+            el(
+              "div",
+              { class: "card-header" },
+              html(
+                '<div class="card-title"><i class="ti ti-wallet" style="color:var(--green)"></i> All assets</div>',
+              ),
+              html(
+                `<span style="font-size:13px;font-family:var(--mono);color:var(--muted)">${fmt(totalAssets)}</span>`,
+              ),
+            ),
+            ...rows,
+          ),
+        );
+      }
+      function renderLiabilities() {
+        const totalLiab = state.liabilities.reduce((s, l) => s + l.balance, 0);
+        const addBtn = html(
+          '<button class="btn btn-primary"><i class="ti ti-plus"></i> Add liability</button>',
+        );
+        addBtn.onclick = () => showAddLiabilityModal();
+        const rows = state.liabilities.length
+          ? state.liabilities.map((l) => {
+              const row = el(
+                "div",
+                { class: "row" },
+                el(
+                  "div",
+                  { class: "row-left" },
+                  el(
+                    "div",
+                    {
+                      class: "icon-box",
+                      style: "background:rgba(255,84,112,.1)",
+                    },
+                    html(
+                      `<i class="ti ${LIAB_ICON[l.type] || "ti-receipt"}" style="color:var(--red)"></i>`,
+                    ),
+                  ),
+                  el(
+                    "div",
+                    {},
+                    el("div", { class: "row-name" }, l.name),
+                    el(
+                      "div",
+                      { class: "row-sub" },
+                      l.type.replace("_", " ") +
+                        (l.interestRate
+                          ? ` · ${(l.interestRate * 100).toFixed(2)}% APR`
+                          : ""),
+                    ),
+                  ),
+                ),
+                el(
+                  "div",
+                  { style: "display:flex;align-items:center;gap:12px" },
+                  el(
+                    "div",
+                    {},
+                    el(
+                      "div",
+                      { class: "row-val", style: "color:var(--red)" },
+                      fmt(l.balance),
+                    ),
+                    el(
+                      "div",
+                      { class: "row-pct" },
+                      totalLiab > 0
+                        ? Math.round((l.balance / totalLiab) * 100) +
+                            "% of debt"
+                        : "",
+                    ),
+                  ),
+                  (() => {
+                    const d = html(
+                      '<button class="btn btn-sm btn-danger"><i class="ti ti-trash"></i></button>',
+                    );
+                    d.onclick = async () => {
+                      await DELETE(`/liabilities/${l._id}`);
+                      await loadData();
+                      render();
+                    };
+                    return d;
+                  })(),
+                ),
+              );
+              return row;
+            })
+          : [
+              el(
+                "div",
+                { class: "empty" },
+                html('<i class="ti ti-circle-check"></i>'),
+                html(
+                  "<p>No liabilities. Add debts to track your full net worth.</p>",
+                ),
+              ),
+            ];
+        return el(
+          "div",
+          { class: "page" },
+          el(
+            "div",
+            { class: "topbar" },
+            html('<div class="topbar-title">Liabilities</div>'),
+            el("div", { class: "actions" }, addBtn),
+          ),
+          el(
+            "div",
+            { class: "card" },
+            el(
+              "div",
+              { class: "card-header" },
+              html(
+                '<div class="card-title"><i class="ti ti-receipt" style="color:var(--red)"></i> All liabilities</div>',
+              ),
+              html(
+                `<span style="font-size:13px;font-family:var(--mono);color:var(--red)">${fmt(totalLiab)} total</span>`,
+              ),
+            ),
+            ...rows,
+          ),
+        );
+      }
+      function showAddAssetModal() {
+        const types = [
+          "bank",
+          "investment",
+          "crypto",
+          "real_estate",
+          "vehicle",
+          "other",
+        ];
+        let selectedType = "bank";
+        const errDiv = html('<div class="auth-err hidden"></div>');
+        const nameInput = html(
+          '<input type="text" placeholder="e.g. Chase Savings" required />',
+        );
+        const valInput = html(
+          '<input type="number" step="0.01" placeholder="10000" />',
+        );
+        const coinInput = html(
+          '<input type="text" placeholder="e.g. bitcoin, ethereum" />',
+        );
+        const qtyInput = html(
+          '<input type="number" step="any" placeholder="0.5" />',
+        );
+        const typeGrid = el("div", { class: "type-grid" });
+        const typeBtns = {};
+        for (const t of types) {
+          const b = el(
+            "button",
+            {
+              class: `type-btn${t === "bank" ? " active" : ""}`,
+              type: "button",
+            },
+            html(`<i class="ti ${TYPE_ICON[t]}" style="font-size:18px"></i>`),
+            t.replace("_", " "),
+          );
+          b.onclick = () => {
+            selectedType = t;
+            for (const [k, v] of Object.entries(typeBtns))
+              v.className = `type-btn${k === t ? " active" : ""}`;
+            updateFields();
+          };
+          typeBtns[t] = b;
+          typeGrid.appendChild(b);
+        }
+        const manualFields = el(
+          "div",
+          {},
+          el(
+            "div",
+            { class: "form-group" },
+            html("<label>Current value (USD)</label>"),
+            valInput,
+          ),
+        );
+        const cryptoFields = el(
+          "div",
+          { class: "hidden" },
+          el(
+            "div",
+            { class: "form-group" },
+            html("<label>CoinGecko ID</label>"),
+            coinInput,
+          ),
+          el(
+            "div",
+            { class: "form-group" },
+            html("<label>Quantity held</label>"),
+            qtyInput,
+          ),
+        );
+        function updateFields() {
+          if (selectedType === "crypto") {
+            manualFields.classList.add("hidden");
+            cryptoFields.classList.remove("hidden");
+          } else {
+            manualFields.classList.remove("hidden");
+            cryptoFields.classList.add("hidden");
+          }
+        }
+        const submitBtn = html(
+          '<button class="btn btn-primary" type="button">Add asset</button>',
+        );
+        const cancelBtn = html(
+          '<button class="btn" type="button">Cancel</button>',
+        );
+        submitBtn.onclick = async () => {
+          errDiv.classList.add("hidden");
+          submitBtn.textContent = "Adding…";
+          try {
+            if (selectedType === "crypto") {
+              const priceData = await GET(
+                `/crypto/price/${coinInput.value.trim()}`,
+              );
+              const value = priceData.price * parseFloat(qtyInput.value);
+              await POST("/assets", {
+                name: nameInput.value,
+                type: "crypto",
+                value,
+                currency: "USD",
+                source: "coingecko",
+                coinGeckoId: coinInput.value.trim(),
+                quantity: parseFloat(qtyInput.value),
+              });
+            } else {
+              await POST("/assets", {
+                name: nameInput.value,
+                type: selectedType,
+                value: parseFloat(valInput.value) || 0,
+                currency: "USD",
+                source: "manual",
+              });
+            }
+            await POST("/snapshots/refresh");
+            await loadData();
+            closeModal();
+            render();
+          } catch (e) {
+            errDiv.textContent = e.message;
+            errDiv.classList.remove("hidden");
+            submitBtn.textContent = "Add asset";
+          }
+        };
+        const modal = el(
+          "div",
+          { class: "overlay" },
+          el(
+            "div",
+            { class: "modal" },
+            html('<div class="modal-title">Add asset</div>'),
+            errDiv,
+            typeGrid,
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Name</label>"),
+              nameInput,
+            ),
+            manualFields,
+            cryptoFields,
+            el(
+              "div",
+              {
+                style:
+                  "display:flex;gap:8px;justify-content:flex-end;margin-top:8px",
+              },
+              cancelBtn,
+              submitBtn,
+            ),
+          ),
+        );
+        cancelBtn.onclick = closeModal;
+        modal.onclick = (e) => {
+          if (e.target === modal) closeModal();
+        };
+
+        function closeModal() {
+          modal.remove();
+        }
+        document.body.appendChild(modal);
+      }
+      function showAddLiabilityModal() {
+        const errDiv = html('<div class="auth-err hidden"></div>');
+        const nameInput = html(
+          '<input type="text" placeholder="e.g. Chase Sapphire" required />',
+        );
+        const typeSelect = html(`<select>
+    <option value="credit_card">Credit card</option>
+    <option value="mortgage">Mortgage</option>
+    <option value="auto_loan">Auto loan</option>
+    <option value="student_loan">Student loan</option>
+    <option value="personal_loan">Personal loan</option>
+    <option value="other">Other</option>
+  </select>`);
+        const balInput = html(
+          '<input type="number" step="0.01" placeholder="5000" required />',
+        );
+        const aprInput = html(
+          '<input type="number" step="0.01" placeholder="19.99" />',
+        );
+        const submitBtn = html(
+          '<button class="btn btn-primary" type="button">Add liability</button>',
+        );
+        const cancelBtn = html(
+          '<button class="btn" type="button">Cancel</button>',
+        );
+        submitBtn.onclick = async () => {
+          errDiv.classList.add("hidden");
+          submitBtn.textContent = "Adding…";
+          try {
+            await POST("/liabilities", {
+              name: nameInput.value,
+              type: typeSelect.value,
+              balance: parseFloat(balInput.value) || 0,
+              interestRate: aprInput.value
+                ? parseFloat(aprInput.value) / 100
+                : undefined,
+            });
+            await POST("/snapshots/refresh");
+            await loadData();
+            closeModal();
+            render();
+          } catch (e) {
+            errDiv.textContent = e.message;
+            errDiv.classList.remove("hidden");
+            submitBtn.textContent = "Add liability";
+          }
+        };
+        const modal = el(
+          "div",
+          { class: "overlay" },
+          el(
+            "div",
+            { class: "modal" },
+            html('<div class="modal-title">Add liability</div>'),
+            errDiv,
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Type</label>"),
+              typeSelect,
+            ),
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Name</label>"),
+              nameInput,
+            ),
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>Balance (USD)</label>"),
+              balInput,
+            ),
+            el(
+              "div",
+              { class: "form-group" },
+              html("<label>APR % (optional)</label>"),
+              aprInput,
+            ),
+            el(
+              "div",
+              {
+                style:
+                  "display:flex;gap:8px;justify-content:flex-end;margin-top:8px",
+              },
+              cancelBtn,
+              submitBtn,
+            ),
+          ),
+        );
+        cancelBtn.onclick = closeModal;
+        modal.onclick = (e) => {
+          if (e.target === modal) closeModal();
+        };
+        function closeModal() {
+          modal.remove();
+        }
+        document.body.appendChild(modal);
+      }
+      function renderPage() {
+        switch (state.page) {
+          case "dashboard":
+            return renderDashboard();
+          case "timeline":
+            return renderTimeline();
+          case "assets":
+            return renderAssets();
+          case "liabilities":
+            return renderLiabilities();
+          default:
+            return renderDashboard();
+        }
+      }
+      function render() {
+        const app = document.getElementById("app");
+        app.innerHTML = "";
+        if (!state.user) {
+          app.style.display = "block";
+          if (state.page === "register") app.appendChild(renderRegister());
+          else app.appendChild(renderLogin());
+        } else {
+          app.style.display = "block";
+          app.style.height = "100vh";
+          app.appendChild(renderShell(renderPage()));
+        }
+      }
+      (async () => {
+        try {
+          const data = await GET("/auth/me");
+          state.user = data.user;
+          await loadData();
+        } catch {
+          state.page = "login";
+        }
+        render();
+      })();
+    </script>
+  </body>
+</html>
